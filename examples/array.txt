@@ -1,0 +1,6 @@
+{0'(.+1)}0$ \ sum over array
+{1'(.*1)}1$ \ product over array
+{;'(.;;<['].1)}2$ \ maximum of array
+{;'(.;;>['].1)}3$ \ minimum of array
+
+"Hello World!" 2@?
