@@ -143,9 +143,13 @@ prints a string that is stored on top of the stack:
 `{` and `}` can be used to define subroutines,
 when the execution hits a `{` it pushes the current instruction pointer
 on the value-stack and jumps to the matching `}`.
+
 When the execution hits a `?` it jumps to the address given by
 the value on top of the stack, and executes the code until it reaches a `}`,
 then it jumps back to the address after the `?`.
+
+Each call increases the recursion depth by one, returning from a procedure decreases it.
+If the maximum recursion depth (3 by default) is reached `?` will not jump to the given address but simply continue execution at the current position.
 
 Examples:
 

@@ -26,6 +26,9 @@ static MemPage memPages[PAGES_CAP];
 static int64_t ip=-1;//instruction pointer
 static int64_t callStackPtr=CALL_STACK_MIN;
 static int64_t valueStackPtr=VALUE_STACK_MAX;
+static int64_t callDepth=0;
+static int64_t maxCallDepth=3;
+
 
 static int64_t skipCount=0;
 
@@ -382,12 +385,16 @@ void runProgram(void){
           }
         }while(type!=BLOCK_TYPE_PROC);
         ip=callStackPop();//return
+        callDepth--;
         break;
-      case '?':{//TODO prevent infinite recursion
+      case '?':{
         uint64_t to=popValue();
-        callStackPush(ip);
-        callStackPush(BLOCK_TYPE_PROC);
-        ip=to;
+        if(callDepth<maxCallDepth){
+          callStackPush(ip);
+          callStackPush(BLOCK_TYPE_PROC);
+          callDepth++;
+          ip=to;
+        }
         }break;
       //stack manipulation
       case '.':;//drop   ## a ->
