@@ -16,19 +16,37 @@ struct MemPage{
 };
 static MemPage memPages[PAGES_CAP];
 
+static int64_t* notNULL(int64_t* p){
+  if(p==NULL){
+    fputs("out-of memory\n",stderr);exit(1);
+  }
+  return p;
+}
+
+typedef struct{
+  int64_t* data;
+  int64_t size;
+  int64_t cap;
+}Stack;
+Stack callStack;
+Stack valueStack;
+static void initStack(void){
+  callStack=(Stack){.data=notNULL(malloc(PAGE_SIZE*sizeof(int64_t))),.size=0,.cap=PAGE_SIZE};
+  valueStack=(Stack){.data=notNULL(malloc(PAGE_SIZE*sizeof(int64_t))),.size=0,.cap=PAGE_SIZE};
+}
+static void cleanupStack(void){
+  free(callStack.data);
+  free(valueStack.data);
+}
+
 //memory layout:
-#define CALL_STACK_MIN (int64_t)-0x8000000000000000LL
-// [-0x8000_0000_0000_0000 ... ] callStack
 // [ .... -1]                    source code
 // [0, .... ]                    program memory
-// [..., 0x7fff_ffff_ffff_ffff]  value-stack
-#define VALUE_STACK_MAX (int64_t)0x7FFFFFFFFFFFFFFFLL
+
 static int64_t ip=-1;//instruction pointer
-static int64_t callStackPtr=CALL_STACK_MIN;
-static int64_t valueStackPtr=VALUE_STACK_MAX;
+
 static int64_t callDepth=0;
 static int64_t maxCallDepth=3;
-
 
 static int64_t skipCount=0;
 
@@ -37,7 +55,6 @@ static bool blockComment=false;
 static bool stringMode=false;
 static bool numberMode=false;
 static bool escapeMode=false;
-static bool checkUnderflow=true;
 
 #define BLOCK_TYPE_IF '['
 #define BLOCK_TYPE_FOR '('
@@ -58,10 +75,7 @@ const char* blockTypeName(int64_t blockType){
 
 MemPage* initPage(MemPage* target,int64_t pageId){
   target->pageId=pageId;
-  target->data=calloc(PAGE_SIZE,sizeof(MemPage));
-  if(target->data==NULL){
-    fputs("out-of memory\n",stderr);exit(1);
-  }
+  target->data=notNULL(calloc(PAGE_SIZE,sizeof(MemPage)));
   target->next=NULL;
   return target;
 }
@@ -104,49 +118,49 @@ void writeMemory(int64_t address,int64_t value){
   *cell=value;
 }
 
-bool valueStackEmpty(void){
-  return checkUnderflow&&((VALUE_STACK_MAX-valueStackPtr))<=0;
-}
+
 int64_t valCount(void){
-  return (VALUE_STACK_MAX-valueStackPtr);
+  return valueStack.size;
 }
 void pushValue(int64_t val){
-  writeMemory(valueStackPtr,val);
-  valueStackPtr--;
+  if(valueStack.size>=valueStack.cap){
+    int64_t newCap=valueStack.cap+PAGE_SIZE;
+    valueStack.data=notNULL(realloc(valueStack.data,newCap*sizeof(int64_t)));
+  }
+  valueStack.data[valueStack.size++]=val;
 }
 int64_t peekValue(void){
-  if(valueStackEmpty()){
-    fputs("stack-underflow\n",stderr);exit(1);
-  }
-  return readMemory(valueStackPtr+1);
+  if(valueStack.size<=0)
+    return 0;
+  return valueStack.data[valueStack.size-1];
 }
 int64_t popValue(void){
-  if(valueStackEmpty()){
-    fputs("stack-underflow\n",stderr);exit(1);
-  }
-  valueStackPtr++;
-  return readMemory(valueStackPtr);
+  if(valueStack.size<=0)
+    return 0;
+  return valueStack.data[--valueStack.size];
 }
 
 bool callStackEmpty(void){
-  return checkUnderflow&&((callStackPtr-CALL_STACK_MIN))<=0;
+  return callStack.size<=0;
 }
 void callStackPush(int64_t pos){
-  writeMemory(callStackPtr,pos);
-  callStackPtr++;
+  if(callStack.size>=callStack.cap){
+    int64_t newCap=callStack.cap+PAGE_SIZE;
+    callStack.data=notNULL(realloc(callStack.data,newCap*sizeof(int64_t)));
+  }
+  callStack.data[callStack.size++]=pos;
 }
 int64_t callStackPeek(void){
   if(callStackEmpty()){
     fputs("call-stack underflow\n",stderr);exit(1);
   }
-  return readMemory(callStackPtr-1);
+  return callStack.data[callStack.size-1];
 }
 int64_t callStackPop(void){
   if(callStackEmpty()){
     fputs("call-stack underflow\n",stderr);exit(1);
   }
-  callStackPtr--;
-  return readMemory(callStackPtr);
+  return callStack.data[--callStack.size];
 }
 
 int64_t ipow(int64_t a,int64_t e){
@@ -234,7 +248,7 @@ void runProgram(void){
         stringMode=false;
         if(skipCount>0)
           continue;//string in skipped loop
-        int64_t tmp=callStackPop()-valueStackPtr;
+        int64_t tmp=valueStack.size-callStackPop();
         pushValue(tmp);
       }else{
         if(skipCount>0)
@@ -308,7 +322,7 @@ void runProgram(void){
         break;
       //strings&comments
       case '"':
-        callStackPush(valueStackPtr);
+        callStackPush(valueStack.size);
         stringMode=true;
         break;
       case '\\':
@@ -430,24 +444,24 @@ void runProgram(void){
         if(count==0)
           break;
         if(count>0){
-          if(checkUnderflow&&count>valCount()){
+          if(count>valCount()){//TODO handle value-stack underflow correctly
             fputs("stack underflow",stderr);exit(1);
           }
-          int64_t a=readMemory(valueStackPtr+count); // ^ 1 2 3
+          int64_t a=valueStack.data[valueStack.size-count];// ^ 1 2 3
           for(int64_t i=count;i>1;i--){
-            writeMemory(valueStackPtr+i,readMemory(valueStackPtr+(i-1)));
+            valueStack.data[valueStack.size-i]=valueStack.data[valueStack.size-(i-1)];
           }
-          writeMemory(valueStackPtr+1,a);
+          valueStack.data[valueStack.size-1]=a;
         }else{
           count=-count;
-          if(checkUnderflow&&count>valCount()){
+          if(count>valCount()){
             fputs("stack underflow",stderr);exit(1);
           }
-          int64_t a=readMemory(valueStackPtr+1); // ^ 1 2 3
+          int64_t a=valueStack.data[valueStack.size-1]; // ^ 1 2 3
           for(int64_t i=1;i<count;i++){
-            writeMemory(valueStackPtr+i,readMemory(valueStackPtr+(i+1)));
+            valueStack.data[valueStack.size-i]=valueStack.data[valueStack.size-(i+1)];
           }
-          writeMemory(valueStackPtr+count,a);
+          valueStack.data[valueStack.size-count]=a;
         }
         }break;
       //memory
@@ -590,7 +604,8 @@ int main(int numArgs,char** args) {
     readCode(file);
     fclose(file);//file no longer needed (whole contents are buffered)
   }
-  //print buffer
+
+  initStack();
   runProgram();
 
   puts("\n------------------");
@@ -599,6 +614,7 @@ int main(int numArgs,char** args) {
     printf("%"PRId64" ",popValue());
   }
   puts("");
+  cleanupStack();
   return EXIT_SUCCESS;
 }
 
