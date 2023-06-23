@@ -39,23 +39,6 @@ static void cleanupStack(void){
   free(valueStack.data);
 }
 
-//memory layout:
-// [ .... -1]                    source code
-// [0, .... ]                    program memory
-
-static int64_t ip=-1;//instruction pointer
-
-static int64_t callDepth=0;
-static int64_t maxCallDepth=3;
-
-static int64_t skipCount=0;
-
-static bool comment=false;
-static bool blockComment=false;
-static bool stringMode=false;
-static bool numberMode=false;
-static bool escapeMode=false;
-
 #define BLOCK_TYPE_IF '['
 #define BLOCK_TYPE_FOR '('
 #define BLOCK_TYPE_PROC '{'
@@ -197,7 +180,17 @@ int64_t rshift(int64_t a,int64_t b){
   }
 }
 
+static int64_t maxCallDepth=3;
 void runProgram(void){
+  int64_t callDepth=0;
+  int64_t skipCount=0;
+  bool comment=false;
+  bool blockComment=false;
+  bool stringMode=false;
+  bool numberMode=false;
+  bool escapeMode=false;
+
+  int64_t ip=-1;//instruction pointer
   char command;
   int64_t type;
   while(true){//while program is running
