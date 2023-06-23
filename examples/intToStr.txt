@@ -3,16 +3,16 @@
 ;0<[."-"3,']                       \push sign
 ;10%:0<[~~]"0".+;2+~,1+            \push last digit
 '10/:0<[~~]                        \ensure remaining number is positive
-:[64(.'                            \loop while number is not zero at most 64 times
+:(.'                               \loop while number is not zero (use number as upper bound for digit count)
 ;10%"0".+;2+~,1+                   \push digit
 '10/                               \scale number
-:)].
+:).
 ;"-".=[';~,]                      \rotate sign to start
 }.
 
-{0;0<[."-"3,'];10%:0<[~~]"0".+;2+~,1+'10/:0<[~~]:[64(.';10%"0".+;2+~,1+'10/:)].;"-".=[';~,]}0$
+{0;0<[."-"3,'];10%:0<[~~]"0".+;2+~,1+'10/:0<[~~]:(.';10%"0".+;2+~,1+'10/:).;"-".=[';~,]}0$
 
-{0:![64(.;10%"0".+;2+~,1+'10/';)]'.}1$ \shorter version that only works for non-negative integers
+{0;1+(.;10%"0".+;2+~,1+'10/';)'.}1$ \shorter version that only works for non-negative integers
 
 123456789 0@?(,#) "\n"(,#)
 2 63` 0@? (,#) "\n"(,#)

@@ -1,4 +1,4 @@
-{0:![64(.;10%48+;2+~,1+'10/';)]'.(,#)10#.}0$ \print positive int
+{0;1+(.;10%"0".+;2+~,1+'10/';)'.(,#)10#.}0$ \print positive int
 
 \ compute n-th fibonacci number: 1'0'(.;+'1).
 
