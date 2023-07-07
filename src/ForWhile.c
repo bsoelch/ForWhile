@@ -485,12 +485,12 @@ void runProgram(void){
       case '/':{
         int64_t b=popValue();
         int64_t a=popValue();
-        pushValue(a/b);
+        pushValue(b==0?0:a/b);
         }break;
       case '%':{
         int64_t b=popValue();
         int64_t a=popValue();
-        pushValue(a%b);
+        pushValue(b==0?a:a%b);
         }break;
       case '>':{
           int64_t b=popValue();
