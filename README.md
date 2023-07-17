@@ -88,6 +88,7 @@ pushes the char-code of `"` (`34`) and the length (`1`).
 #### Stack manipulation
 - `.` pops the top value from the stack `... <A> <B>` -> `... <A>`
 - `:` duplicates the top value on the stack `... <A> <B>` -> `... <A> <B> <B>`
+- `;` "over" stack operation `... <A> <B>` -> `... <A> <B> <A>`
 - `'` swaps the top two stack values `... <A> <B>` -> `... <A> <B>`
 - `,` rotates the stack, takes the top element on the stack as argument:
 
