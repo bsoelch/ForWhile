@@ -140,6 +140,11 @@ prints a string that is stored on top of the stack:
 `,` rotates the lowest character of the string (indexed by the length in the loop-counter) to the top of the stack
 `#` prints that character
 
+#### Mixed loops
+
+* `( ... ]` pure for-loop (no condition checking at end of loop)
+* `[ ... )` loop without counter (! will run one iteration if the loop-count is negative)
+
 #### Procedures
 `{` and `}` can be used to define subroutines,
 when the execution hits a `{` it pushes the current instruction pointer
