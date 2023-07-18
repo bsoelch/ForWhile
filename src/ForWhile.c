@@ -200,7 +200,7 @@ void runProgram(void){
     if(blockComment){
       if(command!='\\')
         continue;
-      if(command=='\\'&&readMemory(ip--)=='\\'&&readMemory(ip--)=='\\'){
+      if(command=='\\'&&readMemory(ip--)=='\\'){
         comment=false;
         blockComment=false;
       }
@@ -290,7 +290,7 @@ void runProgram(void){
           break;
         case '\\':
           comment=true;
-          if(readMemory(ip--)=='\\'&&readMemory(ip--)=='\\'){// \\\ -> block comment
+          if(readMemory(ip--)=='\\'){// \\ -> block comment
             blockComment=true;
           }
           break;
@@ -320,7 +320,7 @@ void runProgram(void){
         break;
       case '\\':
         comment=true;
-        if(readMemory(ip--)=='\\'&&readMemory(ip--)=='\\'){// \\\ -> block comment
+        if(readMemory(ip--)=='\\'){// \\ -> block comment
           blockComment=true;
         }
         break;
