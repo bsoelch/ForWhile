@@ -266,14 +266,14 @@ void runProgram(void){
           break;
         case ']':
           type=callStackPop();
-          if(type!=BLOCK_TYPE_IF){
+          if(type!=BLOCK_TYPE_IF&&type!=BLOCK_TYPE_FOR){
             fprintf(stderr,"unexpected ']' in '%s' block\n",blockTypeName(type));exit(1);
           }
           skipCount--;
           break;
         case ')':
           type=callStackPop();
-          if(type!=BLOCK_TYPE_FOR){
+          if(type!=BLOCK_TYPE_FOR&&type!=BLOCK_TYPE_IF){
             fprintf(stderr,"unexpected ')' in '%s' block\n",blockTypeName(type));exit(1);
           }
           skipCount--;
