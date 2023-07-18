@@ -325,19 +325,38 @@ void runProgram(void){
         }
         break;
       //control flow
-      case '[':
-        if(popValue()!=0){
+      case '[':{
+        int64_t n=popValue();
+        if(n!=0){
+          callStackPush(ip);
+          callStackPush(n);
           callStackPush(BLOCK_TYPE_IF);
         }else{
           skipCount=1;
           callStackPush(BLOCK_TYPE_IF);
         }
-        break;
+        }break;
       case ']':
         type=callStackPop();
-        if(type!=BLOCK_TYPE_IF){
-          fprintf(stderr,"unexpected ']' in '%s' block\n",blockTypeName(type));exit(1);
+        if(type==BLOCK_TYPE_IF){
+          callStackPop();//n
+          callStackPop();//ip
+          break;
         }
+        if(type==BLOCK_TYPE_FOR){ // (] -> pure for-while-loop without counter
+          int64_t n=callStackPop();
+          n--;
+          if(n>0){
+            ip=callStackPeek();
+            callStackPush(n);
+            callStackPush(type);
+            pushValue(n);
+          }else{
+            callStackPop();
+          }
+          break;
+        }
+        fprintf(stderr,"unexpected ']' in '%s' block\n",blockTypeName(type));exit(1);
         break;
       case '(':{
         int64_t n=popValue();
@@ -353,7 +372,7 @@ void runProgram(void){
         }break;
       case ')':{
         type=callStackPop();
-        if(type!=BLOCK_TYPE_FOR){
+        if(type!=BLOCK_TYPE_FOR&&type!=BLOCK_TYPE_IF){// XXX?  { ) -> return if top stack value is zero
           fprintf(stderr,"unexpected ')' in '%s' block\n",blockTypeName(type));exit(1);
         }
         int64_t n=callStackPop();
@@ -363,7 +382,8 @@ void runProgram(void){
           ip=callStackPeek();
           callStackPush(n);
           callStackPush(type);
-          pushValue(n);
+          if(type==BLOCK_TYPE_FOR)// () -> for-while, (] -> pure for-loop
+            pushValue(n);
         }else{
           callStackPop();
         }
